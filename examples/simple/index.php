@@ -27,11 +27,13 @@ $(function(){
 	            type:"GET",
 	            beforeSend: function (request)
 	            {
+					//To avoid the need to manually manipulate Cookies we use Authentication-Token header for authentication
 	                request.setRequestHeader("Authentication-Token", $('#token').val() );
 	            },
 	            url: url,
 	            success: function(data, textStatus, request) {
 					if(null != request.getResponseHeader('Authentication-Token') ){
+						//Update our current Authentication-Token if we receive a new one
 		                $('#token').val(request.getResponseHeader('Authentication-Token'));	
 					}
 

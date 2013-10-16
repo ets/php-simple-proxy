@@ -225,10 +225,15 @@ if ( $enable_native ) {
   foreach ( $header_text as $header ) {
     if ( preg_match( '/^(?:Content-Type|Content-Language|Set-Cookie|Location):/i', $header ) ) {
 	  if ( preg_match( '/Location:.*\/login/', $header ) ) {
+		//Any response redirecting us to the Login screen is a signal we have not properly authenticated
 		$contents .= "No valid Authentication-Token passed in your request. Please login first.";
 	  } else if ( preg_match( '/Location:.*\/user.html/', $header ) ) {
+		
+		//A standard POST to /login will respond with a 302 and a valid Authentication Token. Catch that here and return textual message for the example's output.
 		$contents .= "Valid Authentication-Token generated. Pass it with your subsequent requests.";		
 	  } else if ( preg_match( '/Location: https:\/\/files.*/', $header ) ) {
+		
+		//A call to provision a file for download will respond with a 302 to the destination. Catch that here and return html for the example's output.
 		$contents .= "Requested File <a href='".substr($header,10)."'>Provisioned for Download</a>";		
 		header( "Content-Type:text/html; charset=utf-8" );	
 		break;
