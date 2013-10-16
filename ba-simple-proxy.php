@@ -6,6 +6,7 @@
 //  * Default to native mode enabled. Disabled only through a change to this script.
 //  * Default valid_url_regex to match FolderGrid API calls only
 //  * Added support for properly separating content from headers after a redirect
+//  * Added support for auto-converting a FolderGrid authentication cookie into a header
 
 // ======================= Begin unrevised Original Documentation =========================
 // Script: Simple PHP Proxy: Get external HTML, JSON and more!
@@ -213,6 +214,9 @@ if ( $enable_native ) {
   foreach ( $header_text as $header ) {
     if ( preg_match( '/^(?:Content-Type|Content-Language|Set-Cookie):/i', $header ) ) {
       header( $header );
+    }
+    if ( preg_match( '/Set-Cookie: GRID_SESSION/', $header ) ) {
+      header( 'Authentication-Token: '.substr($header,25) );
     }
   }
   
