@@ -8,8 +8,8 @@ Simply copy all project files under a PHP-capable webserver and point your brows
 
 
 ## Documentation ##
-[http://foldergrid.uservoice.com/knowledgebase/topics/43670-development-white-labeled-interfaces](Developer Documentation)
-[http://foldergrid.com/api/index.html](FolderGrid API Documentation)
+[Developer Documentation](http://foldergrid.uservoice.com/knowledgebase/topics/43670-development-white-labeled-interfaces)
+[FolderGrid API Documentation](http://foldergrid.com/api/index.html)
 
 
 ## Examples ##
