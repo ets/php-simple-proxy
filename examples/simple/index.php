@@ -2,10 +2,6 @@
 
 include "../index.php";
 
-$shell['title3'] = "It's just that simple";
-
-$shell['h2'] = 'Get external HTML, JSON and more!';
-
 // ========================================================================== //
 // SCRIPT
 // ========================================================================== //
@@ -27,16 +23,39 @@ $(function(){
     if ( /mode=native/.test( url ) ) {
       
       // Make GET request.
-      $.get( url, function(data){
-        
-        $('#response')
-          .html( '<pre class="brush:xml"/>' )
-          .find( 'pre' )
-            .text( data );
-        
-        SyntaxHighlighter.highlight();
-      });
-      
+		$.ajax({
+	            type:"GET",
+	            beforeSend: function (request)
+	            {
+	                request.setRequestHeader("Authentication-Token", $('#token').val() );
+	            },
+	            url: url,
+	            success: function(data, textStatus, request) {
+					if(null != request.getResponseHeader('Authentication-Token') ){
+		                $('#token').val(request.getResponseHeader('Authentication-Token'));	
+					}
+
+					if(request.getResponseHeader('Content-Type').indexOf("application/json") == 0){
+						$('#response')
+				          .html( '<pre class="brush:js"/>' )
+				          .find( 'pre' )
+				            .text( JSON.stringify( data, null, 2 ) );
+			        	 SyntaxHighlighter.highlight();				
+					}else if(request.getResponseHeader('Content-Type').indexOf("text/html") == 0){
+						$('#response')
+				          .html( '<pre class="brush:xml"/>' )
+				          .find( 'pre' )
+				            .html( data );						
+					}else{
+						$('#response')
+				          .html( '<pre class="brush:xml"/>' )
+				          .find( 'pre' )
+				            .text( data );
+				        SyntaxHighlighter.highlight();				
+					}
+	            }
+	    });
+
     } else {
       
       // Make JSON request.
@@ -78,7 +97,7 @@ $(function(){
   });
   
   // Clicking sample remote urls should populate the "Remote URL" box.
-  $('#sample a').click(function(){
+  $('.sample a').click(function(){
     $('#url').val( $(this).attr( 'href' ) );
     return false;
   });
@@ -161,26 +180,18 @@ ob_end_clean();
 
 ob_start();
 ?>
-<?= $shell['donate'] ?>
-
 <p>
-  With <a href="http://benalman.com/projects/php-simple-proxy/">Simple PHP Proxy</a>, your JavaScript can
-  access content in remote webpages, without cross-domain security limitations, even if it's not available
-  in JSONP format. Of course, you'll need to install this PHP script on your server.. but that's a small
-  price to have to pay for this much awesomeness.
-</p>
-<p>
-  Please note that while jQuery is used here, you can use any library you'd like.. or just code your
+  Note that while jQuery is used here, you can use any library you'd like.. or just code your
   XMLHttpRequest objects by hand, it doesn't matter. This proxy just acts a bridge between the client
   and server to facilitate cross-domain communication, so the client-side JavaScript is entirely left
   up to you (but I recommend jQuery's <a href="http://docs.jquery.com/Ajax/jQuery.getJSON">getJSON</a>
   method because of its simplicity).
 </p>
 <p>
-  Please see the <a href="http://benalman.com/projects/php-simple-proxy/">project page</a> and 
-  <a href="http://benalman.com/code/projects/php-simple-proxy/docs/">documentation</a> for more usage
-  information.
+  Please see the <a href="https://github.com/ets/php-simple-proxy">project page</a> information.
 </p>
+
+<h2>Ad-Hoc Testing</h2>
 
 <form id="params" method="get" action="">
   <div>
@@ -189,46 +200,25 @@ ob_start();
       <input id="url" class="text" type="text" name="url" value="<?= $_GET['url'] ?>">
     </label>
   </div>
-  <p id="sample">
-    ..or try these sample Remote URLs:
-    <a href="http://github.com/">GitHub</a>,
-    <a href="http://github.com/cowboy/php-simple-proxy/raw/master/examples/simple/json_sample.js">a sample JSON (not JSONP) request</a>,
-    <a href="http://github.com/omg404errorpage">a 404 error page</a>
-  </p>
-  <div>
-    <label>
-      <input type="radio" name="mode" value="native" disabled="disabled">
-      Native <i>(disabled by default)</i>
-    </label>
-  </div>
-  <div>
-    <label>
-      <input type="radio" name="mode" value="json" checked="checked" disabled="disabled">
-      JSON
-    </label>
-  </div>
-  <div class="dependent-mode dependent-mode-json indent">
-    <div>
-      <label>
-        <input type="checkbox" name="full_headers" value="1" checked="checked">
-        Full Headers
-      </label>
-    </div>
-    <div>
-      <label>
-        <input type="checkbox" name="full_status" value="1" checked="checked">
-        Full Status
-      </label>
-    </div>
-  </div>
+  <p>
+    ..try these API requestes in order:
+<ol>
+	<li class="sample"><a href="https://secure.foldergrid.com/demo">FolderGrid API DEMO Login</a></li>
+	<li class="sample"><a href="https://secure.foldergrid.com/folder/*">FolderGrid API Folder Listing</a></li>
+    <li class="sample"><a href="https://secure.foldergrid.com/file/610686">Generate a Download URL</a></li>
+</ol>
+  </p>  
+<input type="hidden" name="mode" value="native"/>
+<input type="hidden" name="DEVELOPMENT_MODE" value="true"/>
   <input class="submit" type="submit" name="submit" value="Submit">
 </form>
 
 <h3>Request URL</h3>
 <p id="request">N/A, click Submit!</p>
-
 <h3>Simple PHP Proxy response</h3>
 <div id="response">N/A, click Submit!</div>
+<h3>Current FolderGrid Authentication Token</h3>
+<input id="token" class="text" style="width:600px" type="text" name="token" value="">
 
 <h3>The code</h3>
 

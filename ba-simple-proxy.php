@@ -62,6 +62,10 @@
 //   full_status - If a JSON request and full_status=1, the JSON response will
 //     contain detailed cURL status information, otherwise it will just contain
 //     the `http_code` property.
+//   DEVELOPMENT_MODE - this parameter must be passed (with any value) if the incoming
+//		request is not SSL encrypted but the target URL is. Requests over HTTPS  
+//		need not pass this parameter. This is a security measure to ensure 
+//		non-development use is secured
 // 
 // Topic: POST Parameters
 // 
@@ -155,8 +159,13 @@ if ( !$url ) {
 }	
 $parsed = parse_url($url);
 
-if ( !preg_match( $valid_host_regex, $parsed['host'] ) ) {
-  
+$requestEncrypted = !empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) != 'off';
+
+if ( !$_GET['DEVELOPMENT_MODE'] && !$requestEncrypted && substr( $url, 0, 5 ) === "https" ) {
+  $contents = 'ERROR: SSL encryption via HTTPS is required when targeting a service over HTTPS. Use query parameter DEVELOPMENT_MODE to bypass this check.';
+  $status = array( 'http_code' => 'ERROR' );  
+
+}else if ( !preg_match( $valid_host_regex, $parsed['host'] ) ) { 
   // Passed url doesn't match $valid_url_regex.
   $contents = 'ERROR: invalid url';
   $status = array( 'http_code' => 'ERROR' );
@@ -176,7 +185,7 @@ if ( !preg_match( $valid_host_regex, $parsed['host'] ) ) {
     curl_setopt( $ch, CURLOPT_POSTFIELDS, $put_vars );	
   }
   
-  if ( $_GET['send_cookies'] != '0' ) {
+  if ( empty($_GET['send_cookies']) || $_GET['send_cookies'] != '0' ) {
     $cookie = array();
     foreach ( $_COOKIE as $key => $value ) {
       $cookie[] = $key . '=' . $value;
@@ -184,12 +193,15 @@ if ( !preg_match( $valid_host_regex, $parsed['host'] ) ) {
     if ( $_GET['send_session'] ) {
       $cookie[] = SID;
     }
+  	if($_SERVER['HTTP_AUTHENTICATION_TOKEN']){
+		$cookie[] = 'GRID_SESSION=' . $_SERVER['HTTP_AUTHENTICATION_TOKEN'];
+  	}    
     $cookie = implode( '; ', $cookie );
-    
     curl_setopt( $ch, CURLOPT_COOKIE, $cookie );
   }
+
   
-  curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true );
+  curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, false );
   curl_setopt( $ch, CURLOPT_HEADER, true );
   curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
   
@@ -199,7 +211,6 @@ if ( !preg_match( $valid_host_regex, $parsed['host'] ) ) {
   $parts = preg_split( '/([\r\n][\r\n])\\1/', $response, -1 );
   $contents = end($parts);
   $header = prev($parts);
-
   $status = curl_getinfo( $ch );
   
   curl_close( $ch );
@@ -212,14 +223,23 @@ if ( $enable_native ) {
   
   // Propagate headers to response.
   foreach ( $header_text as $header ) {
-    if ( preg_match( '/^(?:Content-Type|Content-Language|Set-Cookie):/i', $header ) ) {
-      header( $header );
+    if ( preg_match( '/^(?:Content-Type|Content-Language|Set-Cookie|Location):/i', $header ) ) {
+	  if ( preg_match( '/Location:.*\/login/', $header ) ) {
+		$contents .= "No valid Authentication-Token passed in your request. Please login first.";
+	  } else if ( preg_match( '/Location:.*\/user.html/', $header ) ) {
+		$contents .= "Valid Authentication-Token generated. Pass it with your subsequent requests.";		
+	  } else if ( preg_match( '/Location: https:\/\/files.*/', $header ) ) {
+		$contents .= "Requested File <a href='".substr($header,10)."'>Provisioned for Download</a>";		
+		header( "Content-Type:text/html; charset=utf-8" );	
+		break;
+	  }else{
+		header( $header );	
+	  }      
     }
     if ( preg_match( '/Set-Cookie: GRID_SESSION/', $header ) ) {
-      header( 'Authentication-Token: '.substr($header,25) );
+      header( 'Authentication-Token: '.substr($header,25) );  	  
     }
-  }
-  
+  }  
   print $contents;
   
 } else {

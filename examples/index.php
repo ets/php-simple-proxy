@@ -9,18 +9,7 @@ $shell['link2'] = '../';
 include 'config.php';
 
 ob_start();
-?>
-    <div id="donate">
-      <p>Your generous donation allows me to continue developing and updating my code!</p>
-      <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
-      <input type="hidden" name="cmd" value="_s-xclick">
-      <input type="hidden" name="hosted_button_id" value="5791421">
-      <input class="submit" type="image" src="../donate.gif" name="submit" alt="PayPal - The safer, easier way to pay online!">
-      <img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1">
-      </form>
-      <div class="clear"></div>
-    </div>
-<?
+
 $shell['donate'] = ob_get_contents();
 ob_end_clean();
 
@@ -31,7 +20,7 @@ function draw_shell() {
 <html lang="en">
 <head>
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
-  <title>Ben Alman &raquo; <?= $shell['title1'] ?><? if ( $shell['title2'] ) { print ' &raquo; ' . $shell['title2']; } ?><? if ( $shell['title3'] ) { print ' &raquo; ' . $shell['title3']; } ?></title>
+  <title>FolderGrid Proxy</title>
   <script type="text/javascript" src="<?= $base ?>../shared/ba-debug.js"></script>
   <?
   if ( $shell['jquery'] ) {
@@ -58,19 +47,7 @@ function draw_shell() {
 <div id="page">
   <div id="header">
     <h1>
-      <a href="http://benalman.com/" class="title"><b>Ben</b> Alman</a>
-      <?
-      $i = 1;
-      while ( $shell["title$i"] ) {
-        print ' &raquo; ';
-        if ( $shell["link$i"] ) {
-          print '<a href="' . $shell["link$i"] . '">' . $shell["title$i"] . '</a>';
-        } else {
-          print $shell["title$i"];
-        }
-        $i++;
-      }
-      ?>
+SIMPLE PHP PROXY CUSTOMIZED FOR <a href="http://foldergrid.com">FolderGrid</a>
     </h1>
     <?
     $i = 2;
