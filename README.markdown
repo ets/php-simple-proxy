@@ -1,3 +1,6 @@
+# Fork of Simple PHP Proxy targeting FolderGrid's API #\
+[https://github.com/ets/php-simple-proxy](https://github.com/ets/php-simple-proxy)
+
 # Simple PHP Proxy: Get external HTML, JSON and more! #
 [http://benalman.com/projects/php-simple-proxy/](http://benalman.com/projects/php-simple-proxy/)
 

@@ -1,5 +1,12 @@
 <?PHP
+// Changelog for fork by ets : see <https://github.com/ets/php-simple-proxy> for applicable commits & dates
+//	
+//  * Default to FolderGrid API <https://secure.foldergrid.com> if no URL parameter is passed
+//  * Default to sending cookies. Disabled by setting send_cookies=0
+//  * Default to native mode enabled. Disabled only through a change to this script.
+//  * Default valid_url_regex to match FolderGrid API calls only
 
+// ======================= Begin unrevised Original Documentation =========================
 // Script: Simple PHP Proxy: Get external HTML, JSON and more!
 //
 // *Version: 1.6, Last updated: 1/24/2009*
@@ -22,13 +29,15 @@
 // Simple - http://benalman.com/code/projects/php-simple-proxy/examples/simple/
 // 
 // About: Release History
-// 
+//
 // 1.6 - (1/24/2009) Now defaults to JSON mode, which can now be changed to
 //       native mode by specifying ?mode=native. Native and JSONP modes are
 //       disabled by default because of possible XSS vulnerability issues, but
 //       are configurable in the PHP script along with a url validation regex.
 // 1.5 - (12/27/2009) Initial release
-// 
+// ======================= End unrevised Original Documentation =========================
+
+
 // Topic: GET Parameters
 // 
 // Certain GET (query string) parameters may be passed into ba-simple-proxy.php
@@ -36,17 +45,13 @@
 // 
 //   url - The remote URL resource to fetch. Any GET parameters to be passed
 //     through to the remote URL resource must be urlencoded in this parameter.
-//   mode - If mode=native, the response will be sent using the same content
-//     type and headers that the remote URL resource returned. If omitted, the
-//     response will be JSON (or JSONP). <Native requests> and <JSONP requests>
-//     are disabled by default, see <Configuration Options> for more information.
 //   callback - If specified, the response JSON will be wrapped in this named
 //     function call. This parameter and <JSONP requests> are disabled by
 //     default, see <Configuration Options> for more information.
 //   user_agent - This value will be sent to the remote URL request as the
 //     `User-Agent:` HTTP request header. If omitted, the browser user agent
 //     will be passed through.
-//   send_cookies - If send_cookies=1, all cookies will be forwarded through to
+//   send_cookies - If send_cookies=0, cookies will NOT be forwarded through to
 //     the remote URL request.
 //   send_session - If send_session=1 and send_cookies=1, the SID cookie will be
 //     forwarded through to the remote URL request.
@@ -61,7 +66,7 @@
 // All POST parameters are automatically passed through to the remote URL
 // request.
 // 
-// Topic: JSON requests
+// Topic: JSON "mode" requests
 // 
 // This request will return the contents of the specified url in JSON format.
 // 
@@ -80,7 +85,7 @@
 //     resource.
 //   status - (Object) A hash of status codes returned by cURL.
 // 
-// Topic: JSONP requests
+// Topic: JSONP "mode" requests
 // 
 // This request will return the contents of the specified url in JSONP format
 // (but only if $enable_jsonp is enabled in the PHP script).
@@ -100,7 +105,7 @@
 //     resource.
 //   status - (Object) A hash of status codes returned by cURL.
 // 
-// Topic: Native requests
+// Topic: Native "mode" requests
 // 
 // This request will return the contents of the specified url in the format it
 // was received in, including the same content-type and other headers (but only
@@ -108,7 +113,7 @@
 // 
 // Request:
 // 
-// > ba-simple-proxy.php?url=http://example.com/&mode=native
+// > ba-simple-proxy.php?url=http://example.com/&send_session=1
 // 
 // Response:
 // 
@@ -128,43 +133,48 @@
 //   $enable_native - You can enable <Native requests>, but you should only do
 //     this if you also whitelist specific URLs using $valid_url_regex, to avoid
 //     possible XSS vulnerabilities. Defaults to false.
-//   $valid_url_regex - This regex is matched against the url parameter to
-//     ensure that it is valid. This setting only needs to be used if either
-//     $enable_jsonp or $enable_native are enabled. Defaults to '/.*/' which
+//   $valid_host_regex - This regex is matched against the host specified by the 
+//     url parameter to ensure that it is valid. This setting only needs to be used
+//     if either $enable_jsonp or $enable_native are enabled. Defaults to '/.*/' which
 //     validates all URLs.
 // 
 // ############################################################################
 
 // Change these configuration options if needed, see above descriptions for info.
 $enable_jsonp    = false;
-$enable_native   = false;
-$valid_url_regex = '/.*/';
+$enable_native   = true;
+$valid_host_regex = '/.*\.foldergrid\.com/';
 
 // ############################################################################
 
 $url = $_GET['url'];
-
 if ( !$url ) {
-  
-  // Passed url not specified.
-  $contents = 'ERROR: url not specified';
-  $status = array( 'http_code' => 'ERROR' );
-  
-} else if ( !preg_match( $valid_url_regex, $url ) ) {
+	$url = 'https://secure.foldergrid.com';
+}	
+$parsed = parse_url($url);
+
+if ( !preg_match( $valid_host_regex, $parsed['host'] ) ) {
   
   // Passed url doesn't match $valid_url_regex.
   $contents = 'ERROR: invalid url';
   $status = array( 'http_code' => 'ERROR' );
   
 } else {
+
   $ch = curl_init( $url );
-  
+  curl_setopt($ch, CURLOPT_VERBOSE, 0);
+  curl_setopt( $ch, CURLOPT_CUSTOMREQUEST, $_SERVER['REQUEST_METHOD'] );
+
   if ( strtolower($_SERVER['REQUEST_METHOD']) == 'post' ) {
     curl_setopt( $ch, CURLOPT_POST, true );
     curl_setopt( $ch, CURLOPT_POSTFIELDS, $_POST );
+  }else if (strtolower($_SERVER['REQUEST_METHOD']) == 'put'){
+    curl_setopt( $ch, CURLOPT_POST, true );
+	parse_str(file_get_contents("php://input"),$put_vars);
+    curl_setopt( $ch, CURLOPT_POSTFIELDS, $put_vars );	
   }
   
-  if ( $_GET['send_cookies'] ) {
+  if ( $_GET['send_cookies'] != '0' ) {
     $cookie = array();
     foreach ( $_COOKIE as $key => $value ) {
       $cookie[] = $key . '=' . $value;
@@ -183,8 +193,11 @@ if ( !$url ) {
   
   curl_setopt( $ch, CURLOPT_USERAGENT, $_GET['user_agent'] ? $_GET['user_agent'] : $_SERVER['HTTP_USER_AGENT'] );
   
-  list( $header, $contents ) = preg_split( '/([\r\n][\r\n])\\1/', curl_exec( $ch ), 2 );
-  
+  $response = curl_exec( $ch );
+  $parts = preg_split( '/([\r\n][\r\n])\\1/', $response, -1 );
+  $contents = end($parts);
+  $header = prev($parts);
+
   $status = curl_getinfo( $ch );
   
   curl_close( $ch );
@@ -193,11 +206,7 @@ if ( !$url ) {
 // Split header text into an array.
 $header_text = preg_split( '/[\r\n]+/', $header );
 
-if ( $_GET['mode'] == 'native' ) {
-  if ( !$enable_native ) {
-    $contents = 'ERROR: invalid mode';
-    $status = array( 'http_code' => 'ERROR' );
-  }
+if ( $enable_native ) {
   
   // Propagate headers to response.
   foreach ( $header_text as $header ) {
