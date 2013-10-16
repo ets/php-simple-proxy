@@ -5,6 +5,7 @@
 //  * Default to sending cookies. Disabled by setting send_cookies=0
 //  * Default to native mode enabled. Disabled only through a change to this script.
 //  * Default valid_url_regex to match FolderGrid API calls only
+//  * Added support for properly separating content from headers after a redirect
 
 // ======================= Begin unrevised Original Documentation =========================
 // Script: Simple PHP Proxy: Get external HTML, JSON and more!
